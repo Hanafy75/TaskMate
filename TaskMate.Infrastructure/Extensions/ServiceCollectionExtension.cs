@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TaskMate.Application.Interfaces;
 using TaskMate.Domain.Entities;
 using TaskMate.Infrastructure.Persistence;
+using TaskMate.Infrastructure.Services;
 
 namespace TaskMate.Infrastructure.Extensions
 {
@@ -17,6 +19,8 @@ namespace TaskMate.Infrastructure.Extensions
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
+
+            services.AddScoped<ITokenService, TokenService>();
         }
     }
 }

@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TaskMate.Application\TaskMate.Application.csproj" />
     <ProjectReference Include="..\TaskMate.Domain\TaskMate.Domain.csproj" />
   </ItemGroup>
 

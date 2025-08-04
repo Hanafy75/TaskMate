@@ -1,3 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
+using System.Text;
+using TaskMate.Application.Extenstions;
+using TaskMate.Application.Options;
 using TaskMate.Infrastructure.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,8 +12,38 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Add Infrastructure Layer
+// Add Layers cfg
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+
+//JWT options
+var jwtOptions = builder.Configuration.GetSection("JWT").Get<JWTOptions>();
+
+builder.Services.Configure<JWTOptions>(
+    builder.Configuration.GetSection("JWT"));
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = true;
+    o.SaveToken = true;
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtOptions.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtOptions.Audience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+
 
 var app = builder.Build();
 
@@ -15,6 +51,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(cfg =>
+    {
+        cfg.WithTheme(ScalarTheme.Mars)
+        .WithDefaultHttpClient(ScalarTarget.CSharp,ScalarClient.Http);
+    });
 }
 
 app.UseHttpsRedirection();
