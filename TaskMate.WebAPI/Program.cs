@@ -5,6 +5,7 @@ using System.Text;
 using TaskMate.Application.Extenstions;
 using TaskMate.Application.Options;
 using TaskMate.Infrastructure.Extensions;
+using TaskMate.WebAPI.Middlewares;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -57,6 +58,7 @@ if (app.Environment.IsDevelopment())
         .WithDefaultHttpClient(ScalarTarget.CSharp,ScalarClient.Http);
     });
 }
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
