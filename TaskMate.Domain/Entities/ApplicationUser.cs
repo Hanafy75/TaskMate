@@ -9,5 +9,7 @@ namespace TaskMate.Domain.Entities
 
         public ICollection<Project> Projects { get; set; } = new List<Project>();
         public ICollection<Board>? Boards { get; set; }
+
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

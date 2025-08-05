@@ -15,7 +15,7 @@
             Message = message;
         }
 
-        public static ApiResponse<T> Success(T data, string message = "Request Processed Successfully")
+        public static ApiResponse<T> Success(T? data, string message = "Request Processed Successfully")
         {
             return new ApiResponse<T>(true, data, message, null);
         }

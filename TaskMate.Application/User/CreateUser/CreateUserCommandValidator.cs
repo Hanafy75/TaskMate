@@ -19,7 +19,7 @@ namespace TaskMate.Application.User.CreateUser
 
 
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("Email is required")
+                .NotEmpty()
                 .EmailAddress()
                 .MustAsync(async (email, cancellation) =>
                 {

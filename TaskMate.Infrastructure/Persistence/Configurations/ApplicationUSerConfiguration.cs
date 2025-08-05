@@ -15,6 +15,8 @@ namespace TaskMate.Infrastructure.Persistence.Configurations
             builder.Property(u => u.LastName)
                 .HasMaxLength(20)
                 .IsRequired();
+
+            builder.OwnsMany(u => u.RefreshTokens);
         }
     }
 }

@@ -3,10 +3,10 @@ using TaskMate.Application.User.CreateUser;
 
 namespace TaskMate.Application.Interfaces
 {
-    internal interface IAuthService
+    public interface IAuthService
     {
         Task<AuthResult> RegisterAsync(CreateUserCommand command);
-        Task<AuthResult> GetTokenAsync(string email, string name);
+        Task<AuthResult> GetTokenAsync(string email, string password);
         Task<bool> RevokeRefreshTokenAsync(string refreshToken);
     }
 }

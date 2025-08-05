@@ -46,6 +46,14 @@ namespace TaskMate.WebAPI.Middlewares
                     statusCode = HttpStatusCode.BadRequest;
                     response = ApiResponse<object>.Fail(ex.Message, ex.Errors);
                     break;
+                case BadRequestException ex:
+                    statusCode = HttpStatusCode.BadRequest;
+                    response = ApiResponse<object>.Fail(ex.Message);
+                    break;
+                case SecurityTokenException ex:
+                    statusCode = HttpStatusCode.BadRequest;
+                    response = ApiResponse<object>.Fail(ex.Message);
+                    break;
 
                 default:
                     statusCode = HttpStatusCode.InternalServerError;

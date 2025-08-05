@@ -6,6 +6,6 @@ namespace TaskMate.Application.Interfaces
     public interface ITokenService
     {
         string CreateJwtToken(ApplicationUser user, IList<Claim> userClaims);
-        public string GenerateRefreshToken();
+        public RefreshToken GenerateRefreshToken();
     }
 }

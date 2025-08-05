@@ -44,12 +44,17 @@ namespace TaskMate.Infrastructure.Services
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
 
-        public string GenerateRefreshToken()
+        public RefreshToken GenerateRefreshToken()
         {
             var random = new byte[32];
             RandomNumberGenerator.Fill(random);
 
-            return Convert.ToBase64String(random);
+            return new RefreshToken
+            {
+                CreatedOn = DateTime.UtcNow,
+                ExpiresOn = DateTime.UtcNow.AddDays(_options.RefreshTokenExpiration),
+                Token = Convert.ToBase64String(random)
+            };
         }
     }
 }

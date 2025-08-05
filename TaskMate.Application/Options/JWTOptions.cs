@@ -6,6 +6,7 @@
         public string Issuer { get; set; } = null!;
         public string Audience { get; set; } = null!;
         public int Duration { get; set; }
+        public int RefreshTokenExpiration { get; set; }
     }
 
 }
