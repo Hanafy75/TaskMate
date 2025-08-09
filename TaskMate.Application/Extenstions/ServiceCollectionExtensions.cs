@@ -17,6 +17,7 @@ namespace TaskMate.Application.Extenstions
             services.AddScoped<IAuthService, AuthService>();
 
             services.AddTransient(typeof(IPipelineBehavior<,>),typeof(ValidationBehavior<,>));
+
         }
     }
 }

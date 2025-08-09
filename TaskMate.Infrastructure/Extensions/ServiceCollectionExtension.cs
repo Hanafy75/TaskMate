@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TaskMate.Application.Interfaces;
+using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Entities;
+using TaskMate.Domain.Interfaces;
 using TaskMate.Infrastructure.Persistence;
+using TaskMate.Infrastructure.Repositories;
 using TaskMate.Infrastructure.Services;
 
 namespace TaskMate.Infrastructure.Extensions
@@ -21,6 +24,9 @@ namespace TaskMate.Infrastructure.Extensions
                 .AddDefaultTokenProviders();
 
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IBoardRepository,BoardRepository>();
+            services.AddScoped<IProjectRepository,ProjectRepository>();
         }
     }
 }

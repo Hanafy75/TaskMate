@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using TaskMate.Application.Dtos;
 using TaskMate.Application.User.CreateUser;
 using TaskMate.Application.User.LoginUser;
+using TaskMate.Application.User.RefreshToken;
 using TaskMate.Application.User.RevokeToken;
 using TaskMate.Domain.ValueObject;
 using TaskMate.WebAPI.Responses;
@@ -11,9 +12,8 @@ namespace TaskMate.WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IMediator mediator) : ControllerBase
+    public class AuthController(IMediator _mediator) : ControllerBase
     {
-        private readonly IMediator _mediator = mediator;
 
         [HttpPost("Register")]
         public async Task<ActionResult<ApiResponse<AuthResult>>> Register([FromBody] CreateUserCommand command)
@@ -29,14 +29,14 @@ namespace TaskMate.WebAPI.Controllers
         {
             var result = await _mediator.Send(command);
 
-            if (string.IsNullOrEmpty(result.RefreshToken))
+            if (!string.IsNullOrEmpty(result.RefreshToken))
                 SetRefreshTokenInCookies(result.RefreshToken, result.RefreshTokenExpiresOn);
 
             return Ok(ApiResponse<AuthResult>.Success(result));
         }
 
         [HttpPost("RevokeRefreshToken")]
-        public async Task<ActionResult<ApiResponse<object>>> Revoke([FromBody] RevokeTokenCommand command)
+        public async Task<ActionResult<ApiResponse<object>>> Revoke([FromBody] RevokeTokenCommand? command)
         {
 
             if (command is null)
@@ -51,6 +51,21 @@ namespace TaskMate.WebAPI.Controllers
             return Ok(ApiResponse<object>.Success(null, "Token Revoked Successfully"));
         }
 
+
+        [HttpGet("Refresh")]
+        public async Task<ActionResult<ApiResponse<AuthResult>>> Refresh()
+        {
+            var refreshToken = Request.Cookies[CookieKeys.RefreshToken] ?? string.Empty;
+
+            var command = new RefreshTokenCommand() { RefreshToken = refreshToken };
+
+            var result = await _mediator.Send(command);
+
+            if (!string.IsNullOrEmpty(result.RefreshToken))
+                SetRefreshTokenInCookies(result.RefreshToken, result.RefreshTokenExpiresOn);
+
+            return Ok(ApiResponse<AuthResult>.Success(result));
+        }
 
         #region Helpers
         private void SetRefreshTokenInCookies(string refreshToken, DateTime expires)

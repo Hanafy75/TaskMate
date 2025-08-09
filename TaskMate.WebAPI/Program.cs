@@ -3,9 +3,11 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using TaskMate.Application.Extenstions;
+using TaskMate.Application.Interfaces;
 using TaskMate.Application.Options;
 using TaskMate.Infrastructure.Extensions;
 using TaskMate.WebAPI.Middlewares;
+using TaskMate.WebAPI.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -44,7 +46,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
@@ -55,7 +58,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(cfg =>
     {
         cfg.WithTheme(ScalarTheme.Mars)
-        .WithDefaultHttpClient(ScalarTarget.CSharp,ScalarClient.Http);
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.Http);
     });
 }
 app.UseMiddleware<ErrorHandlingMiddleware>();

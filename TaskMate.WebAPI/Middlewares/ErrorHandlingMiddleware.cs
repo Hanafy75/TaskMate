@@ -54,6 +54,10 @@ namespace TaskMate.WebAPI.Middlewares
                     statusCode = HttpStatusCode.BadRequest;
                     response = ApiResponse<object>.Fail(ex.Message);
                     break;
+                case UnAuthorizedAccessEception ex:
+                    statusCode = HttpStatusCode.Unauthorized;
+                    response = ApiResponse<object>.Fail(ex.Message);
+                    break;
 
                 default:
                     statusCode = HttpStatusCode.InternalServerError;

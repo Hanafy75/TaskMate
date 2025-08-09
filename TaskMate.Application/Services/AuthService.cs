@@ -52,7 +52,6 @@ namespace TaskMate.Application.Services
 
         }
 
-
         public async Task<AuthResult> GetTokenAsync(string email, string password)
         {
             //check for email
@@ -98,6 +97,45 @@ namespace TaskMate.Application.Services
             authResult.ExpiresOn = DateTime.UtcNow.AddHours(_options.Value.Duration);
             return authResult;
         }
+
+        public async Task<AuthResult> GetRefreshTokenAsync(string refreshToken)
+        {
+            var authModel = new AuthResult();
+
+            //we try to get the user that has this refresh token if any
+            var user = await _userManager.Users.SingleOrDefaultAsync(u => u.RefreshTokens.Any(rf => rf.Token == refreshToken));
+
+            if (user is null) throw new SecurityTokenException("Invalid refresh token");
+
+            var refreshTokenFromDb = user.RefreshTokens.First(rf => rf.Token == refreshToken);
+
+            if (!refreshTokenFromDb.IsActive) throw new SecurityTokenException("Inactive refresh token");
+
+            //revoke the token
+            refreshTokenFromDb.RevokedOn = DateTime.UtcNow;
+
+            //2. create new refresh token and add it to this user and save it in the DB
+            var newRefreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshTokens.Add(newRefreshToken);
+            await _userManager.UpdateAsync(user);
+
+            //3. create new JWT Token
+            var claims = await _userManager.GetClaimsAsync(user);
+            var jwtToken = _tokenService.CreateJwtToken(user, claims);
+
+
+            // => finally initialize the return model (auth model)
+            authModel.IsAuthenticated = true;
+            authModel.ExpiresOn =  DateTime.UtcNow.AddHours(_options.Value.Duration);
+            authModel.Email = user.Email;
+            authModel.Token = jwtToken;
+            authModel.Username = user.UserName;
+            authModel.RefreshToken = newRefreshToken.Token;
+            authModel.RefreshTokenExpiresOn = newRefreshToken.ExpiresOn;
+
+            return authModel;
+        }
+
         public async Task<bool> RevokeRefreshTokenAsync(string refreshToken)
         {
             //we try to get the user that has this refresh token if any
@@ -120,5 +158,6 @@ namespace TaskMate.Application.Services
 
             return true;
         }
+
     }
 }

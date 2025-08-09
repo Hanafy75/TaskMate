@@ -7,6 +7,8 @@ namespace TaskMate.Application.Interfaces
     {
         Task<AuthResult> RegisterAsync(CreateUserCommand command);
         Task<AuthResult> GetTokenAsync(string email, string password);
+        Task<AuthResult> GetRefreshTokenAsync(string refreshToken);
+
         Task<bool> RevokeRefreshTokenAsync(string refreshToken);
     }
 }
