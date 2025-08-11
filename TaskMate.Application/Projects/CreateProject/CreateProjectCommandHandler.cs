@@ -12,11 +12,10 @@ namespace TaskMate.Application.Projects.CreateProject
         {
             var userId = _userService.GetCurrentUserId();// the auth filter will catch if this is null so no need to check
 
-            var project = new Project //this conflict with the name space (this is soppose to be an entity)
+            var project = new Project 
             {
                 Name = request.Name,
                 Description = request.Description,
-                CreatedAt = DateTime.UtcNow,
                 UserId = userId!
             };
             await _projectRepo.AddAsync(project);
