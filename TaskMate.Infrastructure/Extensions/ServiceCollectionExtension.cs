@@ -27,6 +27,7 @@ namespace TaskMate.Infrastructure.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IBoardRepository,BoardRepository>();
             services.AddScoped<IProjectRepository,ProjectRepository>();
+            services.AddScoped<IUnitOfWork,UnitOfWork>();
         }
     }
 }

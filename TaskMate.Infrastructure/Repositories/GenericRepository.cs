@@ -34,7 +34,7 @@ namespace TaskMate.Infrastructure.Repositories
             _dbSet.Update(entity);
         }
 
-        public void DeleteAsync(T entity)
+        public void Delete(T entity)
         {
             _dbSet.Remove(entity);
         }

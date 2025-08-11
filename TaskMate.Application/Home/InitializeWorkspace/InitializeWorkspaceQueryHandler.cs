@@ -10,7 +10,7 @@ namespace TaskMate.Application.Home.InitializeWorkspace
     {
         public async Task<HomeDto> Handle(InitializeWorkspaceQuery request, CancellationToken cancellationToken)
         {
-            var currentUserId = _userService.GetCurrentUserIdAsync();
+            var currentUserId = _userService.GetCurrentUserId();
 
             if (currentUserId is null) throw new UnauthorizedAccessException("user must be logged in.");
 
