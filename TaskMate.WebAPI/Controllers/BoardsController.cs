@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using TaskMate.Application.Boards.CreateBoard;
 using TaskMate.Application.Boards.DeleteBoard;
 using TaskMate.Application.Boards.GetBoard;
+using TaskMate.Application.Boards.GetProjectBoards.GetAllBoards;
 using TaskMate.Application.Boards.UpdateBoard;
 using TaskMate.Application.Dtos;
 using TaskMate.Application.Projects.DeleteProject;
@@ -25,6 +26,15 @@ namespace TaskMate.WebAPI.Controllers
 
             return CreatedAtAction(nameof(Get), new { Id = result }, response);
         }
+
+        [HttpGet("/api/Projects/{Id}/Boards")]
+        public async Task<ActionResult<ApiResponse<IEnumerable<BoardDto>>>> GetAll(int Id)
+        {
+            var result = await _mediator.Send(new GetProjectBoardsQuery { ProjectId= Id });
+
+            return Ok(ApiResponse<IEnumerable<BoardDto>>.Success(result));
+        }
+
 
         [HttpGet("{Id}")]
         public async Task<ActionResult<ApiResponse<BoardDto>>> Get(int Id)

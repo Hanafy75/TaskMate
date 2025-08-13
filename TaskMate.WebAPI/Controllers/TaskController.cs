@@ -5,6 +5,7 @@ using TaskMate.Application.Dtos;
 using TaskMate.Application.TaskItems.CreateTaskItem;
 using TaskMate.Application.TaskItems.DeleteTaskItem;
 using TaskMate.Application.TaskItems.GetTaskItem;
+using TaskMate.Application.TaskItems.GetTaskItems;
 using TaskMate.Application.TaskItems.UpdateTaskITem;
 using TaskMate.WebAPI.Responses;
 
@@ -29,6 +30,14 @@ namespace TaskMate.WebAPI.Controllers
             var result = await _mediator.Send(new GetTaskItemQuery { Id = Id});
 
             return Ok(ApiResponse<TaskItemDto>.Success(result));
+        }
+
+        [HttpGet("/api/Boards/{Id}/Tasks")]
+        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> GetAll(int Id)
+        {
+            var result = await _mediator.Send(new GetBoardTaskItemsQuery { BoardId = Id});
+
+            return Ok(ApiResponse<IEnumerable<TaskItemDto>>.Success(result));
         }
 
         [HttpPut]
