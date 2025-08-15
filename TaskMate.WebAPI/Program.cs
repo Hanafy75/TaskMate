@@ -7,6 +7,7 @@ using TaskMate.Application.Extenstions;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.Options;
 using TaskMate.Infrastructure.Extensions;
+using TaskMate.Infrastructure.Persistence;
 using TaskMate.WebAPI.Middlewares;
 using TaskMate.WebAPI.Services;
 var builder = WebApplication.CreateBuilder(args);
@@ -71,6 +72,12 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
+
+using(var scope = app.Services.CreateScope())
+{
+    var serviceProvider = scope.ServiceProvider;
+    await DBInitializer.Initialize(serviceProvider);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
