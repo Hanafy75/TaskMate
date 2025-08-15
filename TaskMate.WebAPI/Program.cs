@@ -73,22 +73,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-using(var scope = app.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
     var serviceProvider = scope.ServiceProvider;
     await DBInitializer.Initialize(serviceProvider);
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.MapOpenApi();
+app.MapScalarApiReference(cfg =>
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(cfg =>
-    {
-        cfg.WithTheme(ScalarTheme.Mars)
-        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.Http);
-    });
-}
+    cfg.WithTheme(ScalarTheme.Mars)
+    .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.Http);
+});
+
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
