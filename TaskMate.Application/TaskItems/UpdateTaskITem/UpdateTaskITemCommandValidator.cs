@@ -6,10 +6,10 @@ namespace TaskMate.Application.TaskItems.UpdateTaskITem
     {
         public UpdateTaskITemCommandValidator()
         {
-            RuleFor(x=>x.Id).NotEmpty();
+            RuleFor(x=>x.Id).NotEmpty().GreaterThan(0);
             RuleFor(x=>x.Name).NotEmpty();
-            RuleFor(x=>x.Status).NotEmpty();
-            RuleFor(x=>x.DueDate).NotEmpty();
+            RuleFor(x=>x.Status).IsInEnum();
+            
         }
     }
 }
