@@ -1,9 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using TaskMate.Application.Dtos;
 
 namespace TaskMate.Application.User.CreateUser
 {
-    public class CreateUserCommand : IRequest<AuthResult>
+    public class CreateUserCommand : IRequest<Result<AuthResult>>
     {
         //command params
         public string FirstName { get; set; } = null!;

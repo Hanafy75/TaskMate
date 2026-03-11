@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TaskMate.Application.Dtos;
 using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Entities;
@@ -10,16 +10,20 @@ namespace TaskMate.Infrastructure.Repositories
     {
         public ProjectRepository(AppDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<ProjectDto>> GetProjectDtosAsync(string userId)
+        public async Task<IEnumerable<ProjectDto>> GetProjectDtosAsync(
+            string userId,
+            CancellationToken cancellationToken = default)
         {
-            var projectsDto = await _context.Projects.Where(p => p.UserId == userId)
+            var projectsDto = await _context.Projects
+                .AsNoTracking()
+                .Where(p => p.UserId == userId)
                 .Select(p=> new ProjectDto
                 {
                     Id = p.Id,
                     Name = p.Name,
                     Description = p.Description,
                     CreatedAt = p.CreatedAt,
-                }).ToListAsync();
+                }).ToListAsync(cancellationToken);
             return projectsDto;
         }
     }

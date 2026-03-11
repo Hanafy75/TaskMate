@@ -1,5 +1,4 @@
-﻿using MediatR;
-using TaskMate.Application.Exceptions;
+using MediatR;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Entities;
@@ -7,12 +6,19 @@ using TaskMate.Domain.Interfaces;
 
 namespace TaskMate.Application.Boards.CreateBoard
 {
-    public class CreateBoardCommandHandler(IBoardRepository _boardRepo, IProjectRepository _projectRepo, IUserService _userService, IUnitOfWork _unitOfWork) : IRequestHandler<CreateBoardCommand, int>
+    internal sealed class CreateBoardCommandHandler(
+        IBoardRepository boardRepo,
+        IProjectRepository projectRepo,
+        IUserService userService,
+        IUnitOfWork unitOfWork)
+        : IRequestHandler<CreateBoardCommand, Result<int>>
     {
-        public async Task<int> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
+        public async Task<Result<int>> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
         {
             //get current user id
-            var userId = _userService.GetCurrentUserId();
+            var userId = userService.GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Auth.Unauthorized", "Authentication is required.");
 
             int boardId;
             //check if it's independent Board or belongs to a project
@@ -25,19 +31,21 @@ namespace TaskMate.Application.Boards.CreateBoard
                     Description = request.Description,
                     UserId = userId,
                 };
-                await _boardRepo.AddAsync(board);
-                await _unitOfWork.SaveChangesAsync();
+                await boardRepo.AddAsync(board, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
                 boardId = board.Id;
             }
             else
             {
                 // so it is belong to a project so we need to get the project to check the ownership fo the current logged in user
-                var project = await _projectRepo.GetByIdAsync(request.ProjectId.Value);
+                var project = await projectRepo.GetByIdAsync(request.ProjectId.Value, cancellationToken);
 
-                if (project is null) throw new NotFoundException("The project that this board belongs to does not exist");
+                if (project is null)
+                    return Error.NotFound("Project.NotFound", "The project that this board belongs to does not exist.");
 
                 //check the owenership
-                if (project.UserId != userId) throw new ForbiddenException("you can't add board to a project you don't have access to it");
+                if (project.UserId != userId)
+                    return Error.Forbidden("Board.Forbidden", "You can't add a board to a project you don't have access to.");
 
                 // if we get here so the project exist and user has access to it  so we add the board to this project
                 var board = new Board
@@ -46,7 +54,7 @@ namespace TaskMate.Application.Boards.CreateBoard
                     Description = request.Description,
                 };
                 project.Boards.Add(board);
-                await _unitOfWork.SaveChangesAsync();
+                await unitOfWork.SaveChangesAsync(cancellationToken);
                 boardId = board.Id;
             }
 

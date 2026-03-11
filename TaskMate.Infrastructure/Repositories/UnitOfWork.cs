@@ -1,4 +1,4 @@
-﻿using TaskMate.Domain.Interfaces;
+using TaskMate.Domain.Interfaces;
 using TaskMate.Infrastructure.Persistence;
 
 namespace TaskMate.Infrastructure.Repositories
@@ -12,9 +12,9 @@ namespace TaskMate.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task SaveChangesAsync()
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            await _context.SaveChangesAsync();
+            return _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

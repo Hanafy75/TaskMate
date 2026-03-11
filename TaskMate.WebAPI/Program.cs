@@ -8,11 +8,14 @@ using TaskMate.Application.Interfaces;
 using TaskMate.Application.Options;
 using TaskMate.Infrastructure.Extensions;
 using TaskMate.Infrastructure.Persistence;
-using TaskMate.WebAPI.Middlewares;
+using TaskMate.WebAPI.Exceptions;
 using TaskMate.WebAPI.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -87,7 +90,7 @@ app.MapScalarApiReference(cfg =>
     .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.Http);
 });
 
-app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 app.UseCors("V0");

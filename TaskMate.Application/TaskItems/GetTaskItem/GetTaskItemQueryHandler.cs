@@ -1,7 +1,6 @@
-﻿using Mapster;
+using Mapster;
 using MediatR;
 using TaskMate.Application.Dtos;
-using TaskMate.Application.Exceptions;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Entities;
@@ -9,40 +8,46 @@ using TaskMate.Domain.Interfaces;
 
 namespace TaskMate.Application.TaskItems.GetTaskItem
 {
-    public class GetTaskItemQueryHandler(
-        IBoardRepository _boardRepo,
-        IProjectRepository _projectRepo,
-        IGenericRepository<TaskItem> _taskRepo,
-        IUserService _userService) : IRequestHandler<GetTaskItemQuery, TaskItemDto>
+    internal sealed class GetTaskItemQueryHandler(
+        IBoardRepository boardRepo,
+        IProjectRepository projectRepo,
+        IGenericRepository<TaskItem> taskRepo,
+        IUserService userService)
+        : IRequestHandler<GetTaskItemQuery, Result<TaskItemDto>>
     {
-        public async Task<TaskItemDto> Handle(GetTaskItemQuery request, CancellationToken cancellationToken)
+        public async Task<Result<TaskItemDto>> Handle(GetTaskItemQuery request, CancellationToken cancellationToken)
         {
-            var userId = _userService.GetCurrentUserId();
+            var userId = userService.GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Auth.Unauthorized", "Authentication is required.");
 
-            var task = await _taskRepo.GetByIdAsync(request.Id);
+            var task = await taskRepo.GetByIdAsync(request.Id, cancellationToken);
             if (task is null)
             {
-                throw new NotFoundException("Task not found.");
+                return Error.NotFound("TaskItem.NotFound", "Task not found.");
             }
 
-            var board = await _boardRepo.GetByIdAsync(task.BoardId);
+            var board = await boardRepo.GetByIdAsync(task.BoardId, cancellationToken);
             if (board is null)
             {
                 // This scenario implies a data integrity issue, as a task should not exist without its board.
-                throw new NotFoundException("The board associated with this task could not be found.");
+                return Error.NotFound("Board.NotFound", "The board associated with this task could not be found.");
             }
 
-            bool hasAccess = await CheckUserAccess(board, userId);
+            var accessResult = await CheckUserAccess(board, userId, cancellationToken);
+            if (accessResult.IsFailed)
+                return accessResult.Errors.ToList();
 
-            if (!hasAccess)
-            {
-                throw new ForbiddenException("You do not have permission to access this resource.");
-            }
+            if (!accessResult.Value)
+                return Error.Forbidden("TaskItem.Forbidden", "You do not have permission to access this resource.");
 
             return task.Adapt<TaskItemDto>();
         }
 
-        private async Task<bool> CheckUserAccess(Board board, string userId)
+        private async Task<Result<bool>> CheckUserAccess(
+            Board board,
+            string userId,
+            CancellationToken cancellationToken)
         {
             // Case 1: The board is an independent board belonging to the user.
             if (board.UserId is not null)
@@ -53,13 +58,15 @@ namespace TaskMate.Application.TaskItems.GetTaskItem
             // Case 2: The board belongs to a project.
             if (board.ProjectId is not null)
             {
-                var project = await _projectRepo.GetByIdAsync(board.ProjectId.Value);
+                var project = await projectRepo.GetByIdAsync(board.ProjectId.Value, cancellationToken);
                 // Check if the project exists and if the user owns it.
                 return project?.UserId == userId;
             }
 
             // If the board has neither a UserId nor a ProjectId, it's an invalid state.
-            throw new BadRequestException("The board is not correctly configured as it does not belong to a user or a project.");
+            return Error.Failure(
+                "Board.InvalidState",
+                "The board is not correctly configured as it does not belong to a user or a project.");
         }
     }
 }

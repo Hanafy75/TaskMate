@@ -1,15 +1,14 @@
-﻿using MediatR;
+using MediatR;
 using TaskMate.Application.Interfaces;
 
 namespace TaskMate.Application.User.RevokeToken
 {
-    public class RevokeTokenCommandHandler(IAuthService authService) : IRequestHandler<RevokeTokenCommand, bool>
+    internal sealed class RevokeTokenCommandHandler(IAuthService authService)
+        : IRequestHandler<RevokeTokenCommand, Result>
     {
-        private readonly IAuthService _authService = authService;
-
-        public async Task<bool> Handle(RevokeTokenCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(RevokeTokenCommand request, CancellationToken cancellationToken)
         {
-            var result = await _authService.RevokeRefreshTokenAsync(request.RefreshToken);
+            var result = await authService.RevokeRefreshTokenAsync(request.RefreshToken, cancellationToken);
             return result;
         }
     }

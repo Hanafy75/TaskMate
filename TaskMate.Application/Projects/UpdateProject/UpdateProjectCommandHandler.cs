@@ -1,30 +1,38 @@
-﻿using MediatR;
-using TaskMate.Application.Exceptions;
+using MediatR;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Interfaces;
 
 namespace TaskMate.Application.Projects.UpdateProject
 {
-    public class UpdateProjectCommandHandler(IProjectRepository _projectRepo, IUserService _userService, IUnitOfWork _unitOfWork) : IRequestHandler<UpdateProjectCommand>
+    internal sealed class UpdateProjectCommandHandler(
+        IProjectRepository projectRepo,
+        IUserService userService,
+        IUnitOfWork unitOfWork)
+        : IRequestHandler<UpdateProjectCommand, Result>
     {
-        public async Task Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
         {
-            var userId = _userService.GetCurrentUserId();
+            var userId = userService.GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Auth.Unauthorized", "Authentication is required.");
 
-            var projectFromDb = await _projectRepo.GetByIdAsync(request.Id);
-            if (projectFromDb is null) throw new NotFoundException($"Project with id {request.Id} that you are trying to update does not exist");
+            var projectFromDb = await projectRepo.GetByIdAsync(request.Id, cancellationToken);
+            if (projectFromDb is null)
+                return Error.NotFound("Project.NotFound", $"Project with id {request.Id} was not found.");
 
             //check ownership for the requested user
-            if (projectFromDb.UserId != userId) throw new ForbiddenException("you don't have permission to access this resource");
+            if (projectFromDb.UserId != userId)
+                return Error.Forbidden("Project.Forbidden", "You don't have permission to access this resource");
 
             //update the date
             projectFromDb.Name = request.Name;
             projectFromDb.Description = request.Description;
 
-            _projectRepo.Update(projectFromDb);
-            await _unitOfWork.SaveChangesAsync();
+            projectRepo.Update(projectFromDb);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
+            return Result.Ok();
         }
     }
 }

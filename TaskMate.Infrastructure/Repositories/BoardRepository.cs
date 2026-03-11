@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TaskMate.Application.Dtos;
 using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Entities;
@@ -10,16 +10,20 @@ namespace TaskMate.Infrastructure.Repositories
     {
         public BoardRepository(AppDbContext context):base(context) { }
 
-        public async Task<IEnumerable<BoardDto>> GetIndependentBoardDtoAsync(string userId)
+        public async Task<IEnumerable<BoardDto>> GetIndependentBoardDtoAsync(
+            string userId,
+            CancellationToken cancellationToken = default)
         {
-            var boardsDto = await _context.Boards.Where(b=>b.UserId==userId).
+            var boardsDto = await _context.Boards
+                .AsNoTracking()
+                .Where(b=>b.UserId==userId).
                 Select(b=> new BoardDto
                 {
                     Id = b.Id,
                     Name = b.Name,
                     Description = b.Description,
                     CreatedAt = b.CreatedAt,
-                }).ToListAsync();
+                }).ToListAsync(cancellationToken);
 
             return boardsDto;
         }

@@ -1,5 +1,4 @@
-﻿using MediatR;
-using TaskMate.Application.Exceptions;
+using MediatR;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 using TaskMate.Domain.Entities;
@@ -8,15 +7,23 @@ using TaskMate.Domain.Interfaces;
 
 namespace TaskMate.Application.TaskItems.CreateTaskItem
 {
-    public class CreateTaskItemCommandHandler(IBoardRepository _boardRepo, IProjectRepository _ProjectRepo, IUserService _userService, IUnitOfWork _unitOfWork) : IRequestHandler<CreateTaskItemCommand, int>
+    internal sealed class CreateTaskItemCommandHandler(
+        IBoardRepository boardRepo,
+        IProjectRepository projectRepo,
+        IUserService userService,
+        IUnitOfWork unitOfWork)
+        : IRequestHandler<CreateTaskItemCommand, Result<int>>
     {
-        public async Task<int> Handle(CreateTaskItemCommand request, CancellationToken cancellationToken)
+        public async Task<Result<int>> Handle(CreateTaskItemCommand request, CancellationToken cancellationToken)
         {
-            var userId = _userService.GetCurrentUserId();
+            var userId = userService.GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Auth.Unauthorized", "Authentication is required.");
 
-            var board = await _boardRepo.GetByIdAsync(request.BoardId);
+            var board = await boardRepo.GetByIdAsync(request.BoardId, cancellationToken);
 
-            if (board is null) throw new NotFoundException("The board which is contains this Task does not exist");
+            if (board is null)
+                return Error.NotFound("Board.NotFound", "The board that contains this task does not exist.");
 
             var task = new TaskItem
             {
@@ -33,29 +40,35 @@ namespace TaskMate.Application.TaskItems.CreateTaskItem
                 if(board.UserId == userId)
                 {
                     board.Tasks.Add(task);
-                    await _unitOfWork.SaveChangesAsync();
+                    await unitOfWork.SaveChangesAsync(cancellationToken);
                 }
                 else
                 {
-                    throw new ForbiddenException("you have no access to do this operation on this resource");
+                    return Error.Forbidden("TaskItem.Forbidden", "You have no access to do this operation on this resource.");
                 }
                 
             }
             else if(board.ProjectId is not null )
             {
                 // 2nd case belongs to project
-                var project = await _ProjectRepo.GetByIdAsync(board.ProjectId.Value);
+                var project = await projectRepo.GetByIdAsync(board.ProjectId.Value, cancellationToken);
 
                 //check if the user has this project
-                if(project.UserId == userId)
+                if(project?.UserId == userId)
                 {
                     board.Tasks.Add(task);
-                    await _unitOfWork.SaveChangesAsync();
+                    await unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+                else
+                {
+                    return Error.Forbidden("TaskItem.Forbidden", "You have no access to do this operation on this resource.");
                 }
             }
             else
             {
-                throw new BadRequestException("The board that this task belongs to does not belong to any user or any project ");
+                return Error.Failure(
+                    "Board.InvalidState",
+                    "The board that this task belongs to does not belong to any user or any project.");
             }
 
             return task.Id;

@@ -1,21 +1,24 @@
-﻿using MediatR;
+using MediatR;
 using TaskMate.Application.Dtos;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 
 namespace TaskMate.Application.Home.InitializeWorkspace
 {
-    internal class GetAllProjectsQueryHandler(IBoardRepository _boardRepo, IProjectRepository _projectRepo, IUserService _userService)
-        : IRequestHandler<GetAllProjectsQuery, IEnumerable<ProjectDto>>
+    internal sealed class GetAllProjectsQueryHandler(
+        IProjectRepository projectRepo,
+        IUserService userService)
+        : IRequestHandler<GetAllProjectsQuery, Result<IEnumerable<ProjectDto>>>
     {
-        public async Task<IEnumerable<ProjectDto>> Handle(GetAllProjectsQuery request, CancellationToken cancellationToken)
+        public async Task<Result<IEnumerable<ProjectDto>>> Handle(GetAllProjectsQuery request, CancellationToken cancellationToken)
         {
-            var currentUserId = _userService.GetCurrentUserId();
+            var currentUserId = userService.GetCurrentUserId();
 
-            if (currentUserId is null) throw new UnauthorizedAccessException("user must be logged in.");
+            if (string.IsNullOrWhiteSpace(currentUserId))
+                return Error.Unauthorized("Auth.Unauthorized", "User must be logged in.");
 
-            var Projects = await _projectRepo.GetProjectDtosAsync(currentUserId);
-            return Projects;
+            var projects = await projectRepo.GetProjectDtosAsync(currentUserId, cancellationToken);
+            return Result<IEnumerable<ProjectDto>>.Ok(projects);
         }
     }
 }

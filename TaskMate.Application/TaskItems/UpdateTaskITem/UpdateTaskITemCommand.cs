@@ -1,10 +1,10 @@
-﻿using MediatR;
+using MediatR;
 using TaskMate.Application.Dtos;
 using TaskMate.Domain.Enums;
 
 namespace TaskMate.Application.TaskItems.UpdateTaskITem
 {
-    public class UpdateTaskITemCommand : IRequest
+    public class UpdateTaskITemCommand : IRequest<Result>
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;

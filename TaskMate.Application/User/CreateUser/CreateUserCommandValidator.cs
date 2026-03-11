@@ -1,12 +1,10 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Identity;
-using TaskMate.Domain.Entities;
+using FluentValidation;
 
 namespace TaskMate.Application.User.CreateUser
 {
     public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
     {
-        public CreateUserCommandValidator(UserManager<ApplicationUser> userManager)
+        public CreateUserCommandValidator()
         {
             RuleFor(x => x.FirstName)
                 .NotEmpty()
@@ -21,11 +19,7 @@ namespace TaskMate.Application.User.CreateUser
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .EmailAddress()
-                .MustAsync(async (email, cancellation) =>
-                {
-                    var user = await userManager.FindByEmailAsync(email);
-                    return user is null;
-                }).WithMessage("Email already registered!");
+                .MaximumLength(50);
 
 
             RuleFor(x => x.Password)

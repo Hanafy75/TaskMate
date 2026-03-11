@@ -1,15 +1,14 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Identity;
-using TaskMate.Domain.Entities;
+using FluentValidation;
 
 namespace TaskMate.Application.User.LoginUser
 {
     public class LoginUserCommandValidator : AbstractValidator<LoginUserCommand>
     {
-        public LoginUserCommandValidator(UserManager<ApplicationUser> userManager)
+        public LoginUserCommandValidator()
         {
             RuleFor(x => x.Email)
                 .NotEmpty()
+                .EmailAddress()
                 .MaximumLength(50);
 
             RuleFor(x => x.Password)

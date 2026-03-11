@@ -1,17 +1,18 @@
-﻿using MediatR;
+using MediatR;
 using TaskMate.Application.Dtos;
-using TaskMate.Application.Exceptions;
 using TaskMate.Application.Interfaces;
 
 namespace TaskMate.Application.User.RefreshToken
 {
-    public class RefreshTokenCommandHandler(IAuthService _authService) : IRequestHandler<RefreshTokenCommand, AuthResult>
+    internal sealed class RefreshTokenCommandHandler(IAuthService authService)
+        : IRequestHandler<RefreshTokenCommand, Result<AuthResult>>
     {
-        public async Task<AuthResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+        public async Task<Result<AuthResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.RefreshToken)) throw new SecurityTokenException("No refresh Token Provided");
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+                return Error.Validation(nameof(request.RefreshToken), "No refresh token provided.");
 
-            var result = await _authService.GetRefreshTokenAsync(request.RefreshToken);
+            var result = await authService.GetRefreshTokenAsync(request.RefreshToken, cancellationToken);
             return result;
         }
     }

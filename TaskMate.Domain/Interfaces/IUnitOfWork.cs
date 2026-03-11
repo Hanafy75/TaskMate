@@ -1,7 +1,9 @@
-﻿namespace TaskMate.Domain.Interfaces
+using System.Threading;
+
+namespace TaskMate.Domain.Interfaces
 {
     public interface IUnitOfWork
     {
-        Task SaveChangesAsync();
+        Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

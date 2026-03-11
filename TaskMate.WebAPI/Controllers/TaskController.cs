@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskMate.Application.Dtos;
@@ -7,52 +7,46 @@ using TaskMate.Application.TaskItems.DeleteTaskItem;
 using TaskMate.Application.TaskItems.GetTaskItem;
 using TaskMate.Application.TaskItems.GetTaskItems;
 using TaskMate.Application.TaskItems.UpdateTaskITem;
-using TaskMate.WebAPI.Responses;
+using TaskMate.WebAPI.Common;
 
 namespace TaskMate.WebAPI.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     [Authorize]
-    public class TaskController(IMediator _mediator) : ControllerBase
+    public class TaskController(IMediator mediator) : BaseApiController
     {
         [HttpPost]
-        public async Task<ActionResult<ApiResponse<int>>> Create(CreateTaskItemCommand command)
+        public async Task<IActionResult> Create(CreateTaskItemCommand command, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(command);
-
-            return Ok(ApiResponse<int>.Success(result));
+            var result = await mediator.Send(command, cancellationToken);
+            return result.IsSucceeded ? Ok(result.Value) : MapErrors(result.Errors);
         }
 
         [HttpGet("{Id}")]
-        public async Task<ActionResult<ApiResponse<TaskItemDto>>> Get(int Id)
+        public async Task<IActionResult> Get(int Id, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetTaskItemQuery { Id = Id});
-
-            return Ok(ApiResponse<TaskItemDto>.Success(result));
+            var result = await mediator.Send(new GetTaskItemQuery { Id = Id}, cancellationToken);
+            return result.IsSucceeded ? Ok(result.Value) : MapErrors(result.Errors);
         }
 
         [HttpGet("/api/Boards/{Id}/Tasks")]
-        public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemDto>>>> GetAll(int Id)
+        public async Task<IActionResult> GetAll(int Id, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetBoardTaskItemsQuery { BoardId = Id});
-
-            return Ok(ApiResponse<IEnumerable<TaskItemDto>>.Success(result));
+            var result = await mediator.Send(new GetBoardTaskItemsQuery { BoardId = Id}, cancellationToken);
+            return result.IsSucceeded ? Ok(result.Value) : MapErrors(result.Errors);
         }
 
         [HttpPut]
-        public async Task<ActionResult<ApiResponse<object>>> Update(UpdateTaskITemCommand command)
+        public async Task<IActionResult> Update(UpdateTaskITemCommand command, CancellationToken cancellationToken)
         {
-             await _mediator.Send(command);
-
-            return Ok(ApiResponse<object>.Success(null,"Task Updated Successfully"));
+            var result = await mediator.Send(command, cancellationToken);
+            return result.IsSucceeded ? NoContent() : MapErrors(result.Errors);
         }
-        [HttpDelete]
-        public async Task<ActionResult<ApiResponse<object>>> Delete(DeleteTaskItemCommand command)
+        [HttpDelete("{Id:int}")]
+        public async Task<IActionResult> Delete(int Id, CancellationToken cancellationToken)
         {
-             await _mediator.Send(command);
-
-            return Ok(ApiResponse<object>.Success(null,"Task Updated Successfully"));
+            var result = await mediator.Send(new DeleteTaskItemCommand { Id = Id }, cancellationToken);
+            return result.IsSucceeded ? NoContent() : MapErrors(result.Errors);
         }
     }
 }

@@ -1,24 +1,31 @@
-﻿using MediatR;
+using MediatR;
 using TaskMate.Application.Dtos;
-using TaskMate.Application.Exceptions;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 
 namespace TaskMate.Application.Boards.GetProjectBoards.GetAllBoards
 {
-    public class GetProjectBoardsQueryHandler(IBoardRepository _boardRepo, IProjectRepository _ProjectRepo, IUserService _userService) : IRequestHandler<GetProjectBoardsQuery, IEnumerable<BoardDto>>
+    internal sealed class GetProjectBoardsQueryHandler(
+        IBoardRepository boardRepo,
+        IProjectRepository projectRepo,
+        IUserService userService)
+        : IRequestHandler<GetProjectBoardsQuery, Result<IEnumerable<BoardDto>>>
     {
-        public async Task<IEnumerable<BoardDto>> Handle(GetProjectBoardsQuery request, CancellationToken cancellationToken)
+        public async Task<Result<IEnumerable<BoardDto>>> Handle(GetProjectBoardsQuery request, CancellationToken cancellationToken)
         {
-            var userId = _userService.GetCurrentUserId();
+            var userId = userService.GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Auth.Unauthorized", "Authentication is required.");
 
-            var project = await _ProjectRepo.GetByIdAsync(request.ProjectId);
+            var project = await projectRepo.GetByIdAsync(request.ProjectId, cancellationToken);
 
-            if (project is null) throw new NotFoundException($"Project with id {request.ProjectId} does not exist");
+            if (project is null)
+                return Error.NotFound("Project.NotFound", $"Project with id {request.ProjectId} was not found.");
 
-            if (project.UserId != userId) throw new ForbiddenException("you don't have access to this board");
+            if (project.UserId != userId)
+                return Error.Forbidden("Board.Forbidden", "You don't have access to this project boards.");
 
-            var boards = (await _boardRepo.GetAllAsync(b => b.ProjectId == project.Id))
+            var boards = (await boardRepo.GetAllAsync(b => b.ProjectId == project.Id, cancellationToken))
                 .Select(board => new BoardDto
                 {
                     Id = board.Id,
@@ -27,7 +34,7 @@ namespace TaskMate.Application.Boards.GetProjectBoards.GetAllBoards
                     CreatedAt = board.CreatedAt,
                 });
 
-            return boards;
+            return Result<IEnumerable<BoardDto>>.Ok(boards);
         }
     }
 }

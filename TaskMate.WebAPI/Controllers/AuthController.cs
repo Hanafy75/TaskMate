@@ -1,42 +1,45 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TaskMate.Application.Constants;
 using TaskMate.Application.Dtos;
 using TaskMate.Application.User.CreateUser;
 using TaskMate.Application.User.LoginUser;
 using TaskMate.Application.User.RefreshToken;
 using TaskMate.Application.User.RevokeToken;
-using TaskMate.Domain.ValueObject;
-using TaskMate.WebAPI.Responses;
+using TaskMate.WebAPI.Common;
 
 namespace TaskMate.WebAPI.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class AuthController(IMediator _mediator) : ControllerBase
+    public class AuthController(IMediator mediator) : BaseApiController
     {
-
         [HttpPost("Register")]
-        public async Task<ActionResult<ApiResponse<AuthResult>>> Register([FromBody] CreateUserCommand command)
+        public async Task<IActionResult> Register([FromBody] CreateUserCommand command, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(command);
-            //set the refresh token in the cookie
-            SetRefreshTokenInCookies(result.RefreshToken, result.RefreshTokenExpiresOn);
-            return Ok(ApiResponse<AuthResult>.Success(result));
+            var result = await mediator.Send(command, cancellationToken);
+            if (result.IsFailed)
+                return MapErrors(result.Errors);
+
+            SetRefreshTokenInCookies(result.Value.RefreshToken, result.Value.RefreshTokenExpiresOn);
+            return Ok(result.Value);
         }
 
         [HttpPost("Login")]
-        public async Task<ActionResult<ApiResponse<AuthResult>>> Login([FromBody] LoginUserCommand command)
+        public async Task<IActionResult> Login([FromBody] LoginUserCommand command, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
 
-            if (!string.IsNullOrEmpty(result.RefreshToken))
-                SetRefreshTokenInCookies(result.RefreshToken, result.RefreshTokenExpiresOn);
+            if (result.IsFailed)
+                return MapErrors(result.Errors);
 
-            return Ok(ApiResponse<AuthResult>.Success(result));
+            if (!string.IsNullOrEmpty(result.Value.RefreshToken))
+                SetRefreshTokenInCookies(result.Value.RefreshToken, result.Value.RefreshTokenExpiresOn);
+
+            return Ok(result.Value);
         }
 
         [HttpPost("RevokeRefreshToken")]
-        public async Task<ActionResult<ApiResponse<object>>> Revoke([FromBody] RevokeTokenCommand? command)
+        public async Task<IActionResult> Revoke([FromBody] RevokeTokenCommand? command, CancellationToken cancellationToken)
         {
 
             if (command is null)
@@ -45,26 +48,27 @@ namespace TaskMate.WebAPI.Controllers
                 command.RefreshToken = Request.Cookies[CookieKeys.RefreshToken];
             }
 
-            var result = await _mediator.Send(command);
-
-
-            return Ok(ApiResponse<object>.Success(null, "Token Revoked Successfully"));
+            var result = await mediator.Send(command, cancellationToken);
+            return result.IsSucceeded ? NoContent() : MapErrors(result.Errors);
         }
 
 
         [HttpGet("Refresh")]
-        public async Task<ActionResult<ApiResponse<AuthResult>>> Refresh()
+        public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
         {
             var refreshToken = Request.Cookies[CookieKeys.RefreshToken] ?? string.Empty;
 
             var command = new RefreshTokenCommand() { RefreshToken = refreshToken };
 
-            var result = await _mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
 
-            if (!string.IsNullOrEmpty(result.RefreshToken))
-                SetRefreshTokenInCookies(result.RefreshToken, result.RefreshTokenExpiresOn);
+            if (result.IsFailed)
+                return MapErrors(result.Errors);
 
-            return Ok(ApiResponse<AuthResult>.Success(result));
+            if (!string.IsNullOrEmpty(result.Value.RefreshToken))
+                SetRefreshTokenInCookies(result.Value.RefreshToken, result.Value.RefreshTokenExpiresOn);
+
+            return Ok(result.Value);
         }
 
         #region Helpers

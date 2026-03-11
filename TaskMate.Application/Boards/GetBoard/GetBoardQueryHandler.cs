@@ -1,38 +1,49 @@
-﻿using Mapster;
+using Mapster;
 using MediatR;
 using TaskMate.Application.Dtos;
-using TaskMate.Application.Exceptions;
 using TaskMate.Application.Interfaces;
 using TaskMate.Application.IRepositories;
 
 namespace TaskMate.Application.Boards.GetBoard
 {
-    public class GetBoardQueryHandler(IBoardRepository _boardRepo, IProjectRepository _ProjectRepo, IUserService _userService) : IRequestHandler<GetBoardQuery, BoardDto>
+    internal sealed class GetBoardQueryHandler(
+        IBoardRepository boardRepo,
+        IProjectRepository projectRepo,
+        IUserService userService)
+        : IRequestHandler<GetBoardQuery, Result<BoardDto>>
     {
-        public async Task<BoardDto> Handle(GetBoardQuery request, CancellationToken cancellationToken)
+        public async Task<Result<BoardDto>> Handle(GetBoardQuery request, CancellationToken cancellationToken)
         {
-            var userId = _userService.GetCurrentUserId();
-            // we retreive the board
-            var board = await _boardRepo.GetByIdAsync(request.Id);
+            var userId = userService.GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Error.Unauthorized("Auth.Unauthorized", "Authentication is required.");
 
-            if (board is null) throw new NotFoundException($"Board with id {request.Id} does not exist");
+            // we retreive the board
+            var board = await boardRepo.GetByIdAsync(request.Id, cancellationToken);
+
+            if (board is null)
+                return Error.NotFound("Board.NotFound", $"Board with id {request.Id} was not found.");
 
             // we have 2 scenarios => 1. board belongs to project / 2. board belongs to user (independent)
             if (board.ProjectId.HasValue)
             {
                 // this means we are in case 1 / we need to get the project to check if the current user has access to it or not
-                var project = await _ProjectRepo.GetByIdAsync(board.ProjectId.Value);
+                var project = await projectRepo.GetByIdAsync(board.ProjectId.Value, cancellationToken);
 
-                if (project is null) throw new NotFoundException($"Project with id {board.ProjectId.Value} does not exist");
+                if (project is null)
+                    return Error.NotFound("Project.NotFound", $"Project with id {board.ProjectId.Value} was not found.");
 
-                if (project.UserId != userId) throw new ForbiddenException("you don't have access to this board");
+                if (project.UserId != userId)
+                    return Error.Forbidden("Board.Forbidden", "You don't have access to this board.");
 
                 return board.Adapt<BoardDto>();
             }
             else
             {
                 // this means we are in case 2
-                if (board.UserId != userId) throw new ForbiddenException("you don't have access to this board");
+                if (board.UserId != userId)
+                    return Error.Forbidden("Board.Forbidden", "You don't have access to this board.");
+
                 return board.Adapt<BoardDto>();
             }
         }

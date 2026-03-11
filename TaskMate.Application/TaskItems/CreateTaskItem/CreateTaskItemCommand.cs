@@ -1,8 +1,8 @@
-﻿using MediatR;
+using MediatR;
 
 namespace TaskMate.Application.TaskItems.CreateTaskItem
 {
-    public class CreateTaskItemCommand : IRequest<int>
+    public class CreateTaskItemCommand : IRequest<Result<int>>
     {
         public string Name { get; set; } = null!;
         public string? Description { get; set; }

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskMate.Application.Dtos;
@@ -6,47 +6,43 @@ using TaskMate.Application.Projects.CreateProject;
 using TaskMate.Application.Projects.DeleteProject;
 using TaskMate.Application.Projects.GetProject;
 using TaskMate.Application.Projects.UpdateProject;
-using TaskMate.WebAPI.Responses;
+using TaskMate.WebAPI.Common;
 
 namespace TaskMate.WebAPI.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
-    [ApiController]
-    public class ProjectsController(IMediator _mediator) : ControllerBase
+    public class ProjectsController(IMediator mediator) : BaseApiController
     {
         [HttpPost]
-        public async Task<ActionResult<ApiResponse<int>>> Create(CreateProjectCommand command)
+        public async Task<IActionResult> Create(CreateProjectCommand command, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(command);
-
-            var response = ApiResponse<int>.Success(result);
-
-            return CreatedAtAction(nameof(Get), new { Id = result }, response); 
+            var result = await mediator.Send(command, cancellationToken);
+            return result.IsSucceeded
+                ? CreatedAtAction(nameof(Get), new { Id = result.Value }, result.Value)
+                : MapErrors(result.Errors);
         }
 
         [HttpGet("{Id}")]
-        public async Task<ActionResult<ApiResponse<ProjectDto>>> Get(int Id)
+        public async Task<IActionResult> Get(int Id, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetProjectQuery { Id = Id});
-            return Ok(ApiResponse<ProjectDto>.Success(result));
+            var result = await mediator.Send(new GetProjectQuery { Id = Id}, cancellationToken);
+            return result.IsSucceeded ? Ok(result.Value) : MapErrors(result.Errors);
         }
 
         [HttpPut]
-        public async Task<ActionResult<ApiResponse<object>>> Update(UpdateProjectCommand command)
+        public async Task<IActionResult> Update(UpdateProjectCommand command, CancellationToken cancellationToken)
         {
-             await _mediator.Send(command);
-
-            return Ok(ApiResponse<object>.Success(null,"Project Updated Successfully"));
+            var result = await mediator.Send(command, cancellationToken);
+            return result.IsSucceeded ? NoContent() : MapErrors(result.Errors);
         }
 
 
         [HttpDelete("{Id}")]
-        public async Task<ActionResult<ApiResponse<object>>> Delete(int Id)
+        public async Task<IActionResult> Delete(int Id, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new DeleteProjectCommand { Id = Id });
-
-            return Ok(ApiResponse<object>.Success(null, "Project Deleted Successfully"));
+            var result = await mediator.Send(new DeleteProjectCommand { Id = Id }, cancellationToken);
+            return result.IsSucceeded ? NoContent() : MapErrors(result.Errors);
         }
     }
 }
