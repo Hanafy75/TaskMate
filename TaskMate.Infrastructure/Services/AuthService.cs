@@ -17,6 +17,13 @@ internal sealed class AuthService(
 {
     public async Task<Result<AuthResult>> RegisterAsync(CreateUserCommand command, CancellationToken cancellationToken = default)
     {
+        // i guess we need to check if the user already exists
+        var existingUser = await userManager.FindByEmailAsync(command.Email);
+        if (existingUser is not null)
+        {
+            return Error.InvalidCredentials("Auth.UserAlreadyExists", "User already exists.");
+        }
+
         var user = new ApplicationUser
         {
             UserName = new MailAddress(command.Email).User,
