@@ -92,7 +92,10 @@ app.MapScalarApiReference(cfg =>
 
 app.UseExceptionHandler();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("V0");
 
 app.UseAuthentication();
